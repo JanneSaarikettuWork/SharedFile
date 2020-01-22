@@ -1,6 +1,6 @@
 ﻿/*****************************************************************************************************************
  * ReadersWriterLockGlobal - a readers–writer lock implementation that can be used for synchronizing
- * activities between different processes.
+ * reading and writing activities of files shared between different processes (and threads).
  * 
  * For readers–writer lock design pattern, see 
  * - https://en.wikipedia.org/wiki/Readers%E2%80%93writer_lock and
@@ -9,7 +9,7 @@
  * Note that .NET classes ReaderWriterLock and ReaderWriterLockSlim do not support synchronization between different 
  * processes, only synchronization between threads inside a process.
  * 
- * See also/modified from:
+ * See also/created from pseudocode in:
  * https://stackoverflow.com/questions/3503833/cross-process-read-write-synchronization-primative-in-net
  * 
  *****************************************************************************************************************/

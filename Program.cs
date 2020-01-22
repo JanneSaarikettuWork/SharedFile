@@ -33,10 +33,12 @@ namespace SharedFile
 {
     class Program
     {
-        // private ReaderWriterLockSlim cacheLock = new ReaderWriterLockSlim();
         private ReadersWriterLockGlobal cacheLock = new ReadersWriterLockGlobal("lookup_cache", 10);
-
         const string cacheFileName = "test_cache.dat";
+
+        private MasterSelection masterSelection = new MasterSelection();
+
+
 
         static void Main(string[] args)
         {
@@ -65,6 +67,10 @@ namespace SharedFile
                 Console.WriteLine("1. Save to cache file()");
                 Console.WriteLine("2. Load from cache file()");
                 Console.WriteLine("3. Delete cache file()");
+                Console.WriteLine("...");
+                Console.WriteLine("40. MasterSelection.IAmTheMaster()");
+                //Console.WriteLine("50. MasterSelection.SaveMasterLock(12345, \"kokkeli koo\")");
+                //Console.WriteLine("51. MasterSelection.LoadMasterLock()");
                 Console.WriteLine("...");
                 Console.WriteLine($"101. Set delay (*100 ms) to file operations (now: {delayMsBetweenFileOperations})");
                 Console.WriteLine($"102. Set repeat count (1-999999) for save & load (now: {repeatCountForOperations})");
@@ -95,6 +101,24 @@ namespace SharedFile
                         case "3":
                             DeleteFile(readersWriterLockUsed);
                             break;
+
+                        case "40":
+                            bool iAmMaster = masterSelection.IAmTheMaster();
+                            Console.WriteLine("I am the master (y/n): {0}", iAmMaster ? "yes" : "no");
+                            break;
+
+                        //case "50":
+                        //    masterSelection.SaveMasterLock(12345, "kokkeli koo");
+                        //    break;
+
+                        //case "51":
+                        //    int pid = 0;
+                        //    string humanFriendly = "";
+                        //    masterSelection.LoadMasterLock(ref pid, ref humanFriendly);
+                        //    Console.WriteLine($"MasterSelection.LoadMasterLock() returns {pid}, \"{humanFriendly}\"");
+                        //    break;
+
+
 
                         case "101":
                             delayMsBetweenFileOperations = AskNumber("Enter delay (*100 ms) to file operations> ");
