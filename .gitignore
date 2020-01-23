@@ -6,3 +6,5 @@
 /.vs/SharedFile/v15/Server/sqlite3
 /.vs/SharedFile/v15/.suo
 /bin/Debug
+/obj/Release
+/.vs
