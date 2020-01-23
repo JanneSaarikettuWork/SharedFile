@@ -19,8 +19,9 @@ namespace SharedFile
 {
     class ReadersWriterLockGlobal
     {
-        const string sync_object_prefix = ".conveyor_";
-
+        const string sync_object_prefix = ".conveyor_"; // Prefix syncronization object names with this for easy finding
+        const int enter_lock_timeout_ms = 600000;       // A failsafe timeout (10 min) for handling an unlikely situation where something has gone seriously wrong in process synchronization 
+                                                            
         Mutex m_mutex;
         Semaphore m_semaphore;
         int m_max_nrof_readers;
@@ -63,26 +64,48 @@ namespace SharedFile
             Dispose();
         }
 
-        public void EnterReadLock()
+        /// <summary>
+        /// Enter read lock in the beginning of an inter-process read operation
+        /// </summary>
+        /// <returns><c>true</c> if lock was successfully entered; 
+        /// otherwise <c>false</c> in which case cancel the read operation and do not try to exit the lock</returns>
+        public bool EnterReadLock()
         {
-            m_mutex.WaitOne();
+            if (false == m_mutex.WaitOne(enter_lock_timeout_ms))
+                return false;
+
             m_semaphore.WaitOne();
             m_mutex.ReleaseMutex();
+            return true;
         }
 
+        /// <summary>
+        /// Exit read lock at the end of an inter-process read operation
+        /// </summary>
         public void ExitReadLock()
         {
             m_semaphore.Release();
         }
 
-        public void EnterWriteLock()
+        /// <summary>
+        /// Enter write lock in the beginning of an inter-process write operation
+        /// </summary>
+        /// <returns><c>true</c> if lock was successfully entered; 
+        /// otherwise <c>false</c> in which case cancel the write operation and do not try to exit the lock</returns>
+        public bool EnterWriteLock()
         {
-            m_mutex.WaitOne();
+            if (false == m_mutex.WaitOne(enter_lock_timeout_ms))
+                return false;
+
             for (int i = 0; i < m_max_nrof_readers; i++)
                 m_semaphore.WaitOne(); // drain out all readers-in-progress
             m_mutex.ReleaseMutex();
+            return true;
         }
 
+        /// <summary>
+        /// Exit write lock at the end of an inter-process write operation
+        /// </summary>
         public void ExitWriteLock()
         {
             for (int i = 0; i < m_max_nrof_readers; i++)

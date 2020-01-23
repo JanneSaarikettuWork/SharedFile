@@ -91,7 +91,12 @@ namespace SharedFile
              * would lead to an illegal situation where both processes #1 and #2 think they are masters. Therefore, both checking 
              * and setting master role needs to be in the same critical section where only one process is allowed at a time.
              */
-            masterLock.EnterWriteLock();
+            if (!masterLock.EnterWriteLock())
+            {
+                LogEvent("IAmTheMaster() - failed to enter write lock");
+                return false;
+            }
+            LogEvent("IAmTheMaster() - entered write lock");
 
             try
             {
@@ -102,11 +107,17 @@ namespace SharedFile
                     int masterLockPid = ReadMasterLockPid(); // 3.1.
 
                     if (MyPid == masterLockPid) // 3.1.1.
-                        return true; // I am the master (..ou jeah!)
+                    {
+                        LogEvent("I am the master"); // ..ou jeah!
+                        return true; 
+                    }
                     else // 3.1.2.
                     {
                         if (ConveyorProcessExists(masterLockPid)) // 3.1.2.2.
-                            return false; // I am a slave (..damn!) 3.1.2.2.1
+                        {
+                            LogEvent("I am a slave"); // ..damn!
+                            return false; // 3.1.2.2.1
+                        }
                         else
                             return (ClaimMasterRole()); // 3.1.2.3.1. -> 2.
                     }
@@ -115,6 +126,7 @@ namespace SharedFile
             finally
             {
                 masterLock.ExitWriteLock();
+                LogEvent("IAmTheMaster() - exited write lock");
             }
         }
 
@@ -156,6 +168,7 @@ namespace SharedFile
             string humanFrindlyDescription = "(esim. reader.hostname)";
 
             SaveMasterLock(pid, humanFrindlyDescription);
+            LogEvent("I am the master");
             return true;
         }
 

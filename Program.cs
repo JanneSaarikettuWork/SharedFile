@@ -185,7 +185,11 @@ namespace SharedFile
             if (readersWriterLockUsed)
             {
                 LogEvent("trying to enter SaveToFile()");
-                cacheLock.EnterWriteLock();
+                if (!cacheLock.EnterWriteLock())
+                {
+                    LogEvent("Failed to EnterWriteLock()");
+                    return;
+                }
             }
 
             LogEvent("entering SaveToFile()");
@@ -237,7 +241,11 @@ namespace SharedFile
             if (readersWriterLockUsed)
             { 
                 LogEvent("trying to enter LoadFromFile()");
-                cacheLock.EnterReadLock();
+                if (!cacheLock.EnterReadLock())
+                {
+                    LogEvent("Failed to EnterReadLock()");
+                    return;
+                }
             }
 
             LogEvent("entering LoadFromFile()");
@@ -286,7 +294,11 @@ namespace SharedFile
             if (readersWriterLockUsed)
             {
                 LogEvent("trying to enter DeleteFile()");
-                cacheLock.EnterWriteLock();
+                if (!cacheLock.EnterWriteLock())
+                {
+                    LogEvent("Failed to EnterWriteLock()");
+                    return;
+                }
             }
 
             LogEvent("entering DeleteFile()");
