@@ -78,6 +78,19 @@ namespace SharedFile
         /// <returns>true if caller is master, false if caller is slave</returns>
         public bool IAmTheMaster()
         {
+            /*
+             * Entire master selection procedure needs to be write-locked, allowing only single process at a time to run it.
+             * 
+             * Here, the desired behaviour would not be gained if, for example, reading master lock would be guarded by a read  
+             * lock and writing master lock file with a write lock. In this case several processes would be allowed to 
+             * simultaneuously read the master lock file and do the pid checking. If two processes would do this and come to 
+             * the conclusion that the master process has died (3.1.2.3.), they would both try to claim master role to themself
+             * (3.1.2.3.1.). The write lock would take care of not letting both processes to simultaneously claim master role and
+             * write master lock. However, the first process to enter claiming master role would block the second process, and 
+             * when done and write lock exited, the second process woud do the same thing: claim master role to itself. This 
+             * would lead to an illegal situation where both processes #1 and #2 think they are masters. Therefore, both checking 
+             * and setting master role needs to be in the same critical section where only one process is allowed at a time.
+             */
             masterLock.EnterWriteLock();
 
             try

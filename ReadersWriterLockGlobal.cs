@@ -19,6 +19,8 @@ namespace SharedFile
 {
     class ReadersWriterLockGlobal
     {
+        const string sync_object_prefix = ".conveyor_";
+
         Mutex m_mutex;
         Semaphore m_semaphore;
         int m_max_nrof_readers;
@@ -32,13 +34,13 @@ namespace SharedFile
         {
             bool mutexCreated, semaphoreCreated;
 
-            m_mutex = new Mutex(false, $"{name}.mutex", out mutexCreated);
+            m_mutex = new Mutex(false, $"{sync_object_prefix}{name}.mutex", out mutexCreated);
 
             // play it safe by having one more potential request
             m_max_nrof_readers = maxReaders + 1;
 
             // make all requests initially available
-            m_semaphore = new Semaphore(m_max_nrof_readers, m_max_nrof_readers, $"{name}.semaphore", out semaphoreCreated); 
+            m_semaphore = new Semaphore(m_max_nrof_readers, m_max_nrof_readers, $"{sync_object_prefix}{name}.semaphore", out semaphoreCreated); 
         }
 
         public void Dispose()

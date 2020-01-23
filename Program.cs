@@ -290,7 +290,6 @@ namespace SharedFile
             }
 
             LogEvent("entering DeleteFile()");
-
             try
             {
                 File.Delete(cacheFileName);
@@ -299,6 +298,12 @@ namespace SharedFile
             {
                 Console.WriteLine("Application {0} instance {1} got exception:\n\"{2}\"", this.ToString(), this.GetHashCode(), e.Message);
             }
+            finally
+            {
+                if (readersWriterLockUsed)
+                    cacheLock.ExitWriteLock();
+            }
+
 
             LogEvent("exiting DeleteFile()");
         }
