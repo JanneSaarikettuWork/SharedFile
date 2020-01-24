@@ -9,19 +9,18 @@
  * ------------------------------------------------------------------------------------------------------
  * In the beginning of check loop, in a write -locked critical section:
  * 1.     Check the existence of masterlock.dat file
- * 2.     If file does not exist, claim_master_role
- * 2.1.     Create file and write pid and reader title to the file
- * 2.2.     Return as master
- * 3.     If file exists 
- * 3.1.     Read file_pid from the file and compare it with pid of this process
- * 3.1.1.     Match -> return as master
- * 3.1.2.     No match -> check_master_status
- * 3.1.2.1.     Get a list of all running Conveyor pids
- * 3.1.2.2.     If file_pid is found in the list of pids -> that is the alive master
- * 3.1.2.2.1.     Return as a slave
- * 3.1.2.3.     If file_pid is not found in the list of pids -> master is not running any more
- * 3.1.2.3.1.     claim_master_role (item 2. above)
- * 
+ * 2.     If masterlock.dat does not exist, claim_master_status
+ * 2.1.     Write pid and reader title to masterlock.dat
+ *          -> return as master
+ * 3.     If masterlock.dat exists 
+ * 3.1.     Read file_pid from masterlock.dat and compare it with pid of this process
+ * 3.2.     Match -> return as master
+ * 3.3.     If no match, check_master_status
+ * 3.3.1.     Get a list of all running Conveyor pids
+ * 3.3.2.     If file_pid is found in the collection of pids (i.e. master is alive) 
+ *            -> return as a slave
+ * 3.3.3.     If file_pid is not in the list of pids (i.e. master is not running) 
+ *            -> claim_master_status (item 2.1 above)
  *****************************************************************************************************************/
 using System;
 using System.Collections.Generic;
@@ -84,8 +83,8 @@ namespace SharedFile
              * Here, the desired behaviour would not be gained if, for example, reading master lock would be guarded by a read  
              * lock and writing master lock file with a write lock. In this case several processes would be allowed to 
              * simultaneuously read the master lock file and do the pid checking. If two processes would do this and come to 
-             * the conclusion that the master process has died (3.1.2.3.), they would both try to claim master role to themself
-             * (3.1.2.3.1.). The write lock would take care of not letting both processes to simultaneously claim master role and
+             * the conclusion that the master process has died (3.3.3.), they would both try to claim master role to themself
+             * (3.3.3.). The write lock would take care of not letting both processes to simultaneously claim master role and
              * write master lock. However, the first process to enter claiming master role would block the second process, and 
              * when done and write lock exited, the second process woud do the same thing: claim master role to itself. This 
              * would lead to an illegal situation where both processes #1 and #2 think they are masters. Therefore, both checking 
@@ -106,20 +105,20 @@ namespace SharedFile
                 {
                     int masterLockPid = ReadMasterLockPid(); // 3.1.
 
-                    if (MyPid == masterLockPid) // 3.1.1.
+                    if (MyPid == masterLockPid) // 3.2.
                     {
                         LogEvent("I am the master"); // ..ou jeah!
                         return true; 
                     }
-                    else // 3.1.2.
+                    else // 3.3.
                     {
-                        if (ConveyorProcessExists(masterLockPid)) // 3.1.2.2.
+                        if (ConveyorProcessExists(masterLockPid)) // 3.3.2.
                         {
                             LogEvent("I am a slave"); // ..damn!
-                            return false; // 3.1.2.2.1
+                            return false;
                         }
                         else
-                            return (ClaimMasterRole()); // 3.1.2.3.1. -> 2.
+                            return (ClaimMasterRole()); // 3.3.3. -> 2.
                     }
                 }
             }
@@ -162,18 +161,16 @@ namespace SharedFile
 
         private bool ClaimMasterRole()
         {
-            //*2.1.Create file and write pid and reader title to the file
-            //*2.2.Return as master
+            // 2.1.Write pid and reader title to masterlock.dat
             int pid = MyPid;
             string humanFrindlyDescription = "(esim. reader.hostname)";
 
             SaveMasterLock(pid, humanFrindlyDescription);
+
+            // return as master
             LogEvent("I am the master");
             return true;
         }
-
-
-
 
         // ----------------------------------------------------------------------------
         // SaveMasterLock()
@@ -235,10 +232,10 @@ namespace SharedFile
         // ----------------------------------------------------------------------------
         public void LogEvent(string logString)
         {
-            try // to precede the log string with process id (pid)
+            try//to precede the log string with process id (pid) and process name
             {
-                string pid = Process.GetCurrentProcess().Id.ToString();
-                Console.Write($"({pid}) "); // without newline
+                string pidString = MyPid.ToString();
+                Console.Write($"({pidString} {MyPname}) "); // without newline
             }
             catch (Exception)
             {
